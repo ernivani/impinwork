@@ -27,10 +27,48 @@ class Response
         echo $this->content;
     }
 
-    public static function createJsonResponse($data, int $statusCode = 200, array $headers = [])
+    
+    public static function createJsonResponse($data, int $statusCode = 200)
     {
-        $headers['Content-Type'] = 'application/json';
-        $content = json_encode($data);
-        return new self($content, $statusCode, $headers);
+        header('Content-Type: application/json', true, $statusCode);
+        echo json_encode(self::serialize($data));
+        exit;
     }
+
+    private static function serialize($data)
+    {
+        if (is_array($data)) {
+            return array_map([self::class, 'serializeEntity'], $data);
+        } elseif (is_object($data)) {
+            return self::serializeEntity($data);
+        } else {
+            return $data;
+        }
+    }
+
+    private static function serializeEntity($entity)
+    {
+        $data = [];
+        $reflectionClass = new \ReflectionClass($entity);
+    
+        foreach ($reflectionClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+            if (strpos($method->getName(), 'get') === 0 && $method->getNumberOfParameters() === 0) {
+                $property = lcfirst(substr($method->getName(), 3));
+                if ($property === 'password') {
+                    continue; // Exclure le mot de passe
+                }
+                $value = $method->invoke($entity);
+    
+                if ($value instanceof \DateTimeInterface) {
+                    $value = $value->format('Y-m-d H:i:s');
+                }
+    
+                $data[$property] = $value;
+            }
+        }
+    
+        return $data;
+    }
+    
+
 }
