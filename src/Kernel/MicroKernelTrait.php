@@ -43,15 +43,10 @@ trait MicroKernelTrait
         
         $options = array(
         );
-
-        try {
-            if ($_ENV['SSL_CERT_PATH']) {
-                $options = array(
-                    PDO::MYSQL_ATTR_SSL_CA => $_ENV['SSL_CERT_PATH'] ,
-                  );
-            }
-        } catch (\Exception $e) {
-            // do nothing
+        if (!empty($_ENV['SSL_CERT_PATH'])) {
+            $options = array(
+                PDO::MYSQL_ATTR_SSL_CA => $_ENV['SSL_CERT_PATH'],
+            );
         }
 
         $dbParams = [
