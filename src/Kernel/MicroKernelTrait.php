@@ -31,7 +31,7 @@ trait MicroKernelTrait
     public function loadDoctrine() 
     {
         $isDevMode = true;
-        $paths = [__DIR__ . '/../../../src/Entity'];
+        $paths = [__DIR__ . '/../../../../../src/Entity'];
 
         $config = Setup::createAnnotationMetadataConfiguration(
             $paths,
@@ -63,7 +63,7 @@ trait MicroKernelTrait
 
     public function loadEnvironment()
     {
-        $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/../../../');
+        $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/../../../../../');
         $dotenv->load();
     }
 
@@ -97,7 +97,7 @@ trait MicroKernelTrait
 
     private function loadRoutes()
     {
-        $controllerFiles = glob(__DIR__ . '/../../../src/Controller/*.php');
+        $controllerFiles = glob(__DIR__ . '/../../../../../src/Controller/*.php');
 
         foreach ($controllerFiles as $file) {
             $controllerClass = 'App\\Controller\\' . basename($file, '.php');

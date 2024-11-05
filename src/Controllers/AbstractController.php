@@ -25,7 +25,7 @@ abstract class AbstractController
 
     public function render($view, $params = [])
     {
-        $viewPath = __DIR__ . '/../../../views/' . $view . '.php';
+        $viewPath = __DIR__ . '/../../../../../../../views/' . $view . '.php';
         
         if (file_exists($viewPath)) {
             $params['path'] = function ($routeName, $params = [])
