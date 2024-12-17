@@ -6,7 +6,7 @@ namespace Ernicani\Kernel;
 
 use Ernicani\Routing\Router;
 use Ernicani\Routing\Route;
-use Ernicani\Routing\ApiRoute;
+use Ernicani
 
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManager;
@@ -21,6 +21,7 @@ trait MicroKernelTrait
 
     public function boot()
     {
+
         $this->loadEnvironment();
         $this->loadDoctrine();
         $this->router = new Router();
@@ -43,14 +44,19 @@ trait MicroKernelTrait
         
         $options = array(
         );
-        if (!empty($_ENV['SSL_CERT_PATH'])) {
-            $options = array(
-                PDO::MYSQL_ATTR_SSL_CA => $_ENV['SSL_CERT_PATH'],
-            );
+
+        try {
+            if (isset($_ENV['SSL_CERT_PATH']) && $_ENV['SSL_CERT_PATH']) {
+                $options = array(
+                    PDO::MYSQL_ATTR_SSL_CA => $_ENV['SSL_CERT_PATH'] ,
+                  );
+            }
+        } catch (\Exception $e) {
+            // do nothing
         }
 
         $dbParams = [
-            'driver' => 'pdo_mysql',
+            'driver' => $_ENV['DB_DRIVER'],
             'user' => $_ENV['DB_USERNAME'],
             'password' => $_ENV['DB_PASSWORD'],
             'dbname' => $_ENV['DB_NAME'],
@@ -65,6 +71,7 @@ trait MicroKernelTrait
     {
         $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/../../../../../');
         $dotenv->load();
+
     }
 
     public function handleRequest($uri)
@@ -93,6 +100,7 @@ trait MicroKernelTrait
         }
     }
     
+    
 
     private function loadRoutes()
     {
@@ -109,16 +117,6 @@ trait MicroKernelTrait
         $reflectionClass = new \ReflectionClass($class);
 
         if ($reflectionClass->isSubclassOf('Ernicani\Controllers\AbstractController')) {
-            // Gestion des attributs de classe ApiRoute
-            $classAttributes = $reflectionClass->getAttributes(ApiRoute::class);
-
-            foreach ($classAttributes as $attribute) {
-                /** @var ApiRoute $apiRoute */
-                $apiRoute = $attribute->newInstance();
-                $this->generateCrudRoutes($apiRoute, $class);
-            }
-
-            // Gestion des attributs de méthode Route (comme avant)
             $methods = $reflectionClass->getMethods(\ReflectionMethod::IS_PUBLIC);
 
             foreach ($methods as $method) {
@@ -139,80 +137,16 @@ trait MicroKernelTrait
         }
     }
 
-    private function generateCrudRoutes(ApiRoute $apiRoute, string $controllerClass)
-    {
-        $entity = $apiRoute->entity;
-        $path = $apiRoute->path;
-
-        // Route pour index (GET /path)
-        $this->router->addRoute(
-            '/' . $path,
-            function() use ($controllerClass, $entity) {
-                $controller = new $controllerClass($this->router, $this->entityManager);
-                return $controller->index($entity);
-            },
-            $path . '_index',
-            ['GET']
-        );
-
-        // Route pour show (GET /path/{id})
-        $this->router->addRoute(
-            '/' . $path . '/{id}',
-            function($id) use ($controllerClass, $entity) {
-                $controller = new $controllerClass($this->router, $this->entityManager);
-                return $controller->show($entity, $id);
-            },
-            $path . '_show',
-            ['GET']
-        );
-
-        // Route pour create (POST /path)
-        $this->router->addRoute(
-            '/' . $path,
-            function() use ($controllerClass, $entity) {
-                $controller = new $controllerClass($this->router, $this->entityManager);
-                return $controller->create($entity);
-            },
-            $path . '_create',
-            ['POST']
-        );
-
-        // Route pour update (PUT/PATCH /path/{id})
-        $this->router->addRoute(
-            '/' . $path . '/{id}',
-            function($id) use ($controllerClass, $entity) {
-                $controller = new $controllerClass($this->router, $this->entityManager);
-                return $controller->update($entity, $id);
-            },
-            $path . '_update',
-            ['PUT', 'PATCH']
-        );
-
-        // Route pour delete (DELETE /path/{id})
-        $this->router->addRoute(
-            '/' . $path . '/{id}',
-            function($id) use ($controllerClass, $entity) {
-                $controller = new $controllerClass($this->router, $this->entityManager);
-                return $controller->delete($entity, $id);
-            },
-            $path . '_delete',
-            ['DELETE']
-        );
-    }
-
     private function executeAction($actionWithParams)
     {
-        $action = $actionWithParams[0];
-        $params = $actionWithParams[1];
-    
-        if (is_callable($action)) {
-            call_user_func_array($action, $params);
-        } elseif (is_array($action) && is_string($action[0])) {
-            $controller = new $action[0]($this->router, $this->entityManager);
-            $method = $action[1];
+        // $actionWithParams[0] est l'action, $actionWithParams[1] sont les paramètres
+        if (is_array($actionWithParams[0]) && is_string($actionWithParams[0][0])) {
+            $controller = new $actionWithParams[0][0]($this->router, $this->entityManager);
+            $method = $actionWithParams[0][1];
     
             if (method_exists($controller, $method)) {
-                call_user_func_array([$controller, $method], $params);
+                // Appeler la méthode sur le contrôleur avec les paramètres
+                call_user_func_array([$controller, $method], $actionWithParams[1]);
             } else {
                 echo "Method $method not found in controller.\n";
             }
@@ -220,6 +154,5 @@ trait MicroKernelTrait
             echo "Invalid action format\n";
         }
     }
-    
     
 }

@@ -22,6 +22,7 @@ abstract class AbstractController
        $this->entityManager = $entityManager;
    }
    
+   
 
     public function render($view, $params = [])
     {
@@ -117,5 +118,15 @@ abstract class AbstractController
         http_response_code($status);
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         exit;
+    }
+
+
+    public function getUser() : ?User
+    {
+        if (!isset($_SESSION['user'])) {
+            return null;
+        }
+
+        return $this->entityManager->getRepository(User::class)->find($_SESSION['user']);
     }
 }
