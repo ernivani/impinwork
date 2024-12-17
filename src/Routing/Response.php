@@ -38,7 +38,11 @@ class Response
     private static function serialize($data)
     {
         if (is_array($data)) {
-            return array_map([self::class, 'serializeEntity'], $data);
+            $result = [];
+            foreach ($data as $item) {
+                $result[] = self::serializeEntity($item);
+            }
+            return $result;
         } elseif (is_object($data)) {
             return self::serializeEntity($data);
         } else {
@@ -48,6 +52,10 @@ class Response
 
     private static function serializeEntity($entity)
     {
+        if (!is_object($entity)) {
+            return $entity;
+        }
+
         $data = [];
         $reflectionClass = new \ReflectionClass($entity);
     
