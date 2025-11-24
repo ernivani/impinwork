@@ -19,10 +19,10 @@ trait MicroKernelTrait
     private $debug;
     private EntityManager $entityManager;
 
-    public function boot()
+    public function boot($envName = ".env")
     {
 
-        $this->loadEnvironment();
+        $this->loadEnvironment($envName);
         $this->loadDoctrine();
         $this->router = new Router();
         $this->loadRoutes();
@@ -67,11 +67,10 @@ trait MicroKernelTrait
         $this->entityManager = new EntityManager($connection, $config);
     }
 
-    public function loadEnvironment()
+    public function loadEnvironment($envName)
     {
-        $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/../../../../../');
-        $dotenv->load();
-
+        $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/../../../../../', $envName);
+        $dotenv->safeLoad();
     }
 
     public function handleRequest($uri)
